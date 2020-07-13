@@ -1,5 +1,7 @@
 {
 	"name": "Guide to Radioisotopes",
 	"landing_text": "Welcome to the official guide for NuclearCraft: Overhauled",
-	"version": 1
+	"version": 1,
+//	"many other keys": "and their contents",
+	"i18n": true
 }
