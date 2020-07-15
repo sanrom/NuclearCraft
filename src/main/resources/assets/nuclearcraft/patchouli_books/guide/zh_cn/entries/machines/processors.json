@@ -48,7 +48,7 @@
             "anchor": "fluid_infuser",
             "type": "machines/single_machine",
             "block": "nuclearcraft:infuser",
-            "text": "将流体注入物品，与$(l:machines/processors#fluid_enricher)流体提取器$(/l)刚好相反。"
+            "text": "将流体注入物品，与$(l:machines/processors#fluid_enricher)溶解器$(/l)刚好相反。"
         },
         {
             "anchor": "melter",
