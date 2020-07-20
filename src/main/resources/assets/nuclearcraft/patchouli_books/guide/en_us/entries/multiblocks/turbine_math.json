@@ -1,0 +1,12 @@
+{
+    "name": "Turbine Equations",
+    "icon": "nuclearcraft:turbine_rotor_blade_steel",
+    "category": "nuclearcraft:multiblocks",
+    "pages": [
+        {
+            "anchor": "intro",
+            "type": "text",
+            "text": "(WIP) This section contains all the equations that are used to calculate turbine stats."
+        }
+    ]
+}
