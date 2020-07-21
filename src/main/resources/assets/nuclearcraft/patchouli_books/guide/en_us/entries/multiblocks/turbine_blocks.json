@@ -41,11 +41,15 @@
         {
             "anchor": "rotor_blades",
             "type": "machines/3_tier_machine",
-            "header": "Rotor Blades",
+            "header": "Turbine Rotor Blades",
             "tier1": "nuclearcraft:turbine_rotor_blade_steel",
             "tier2": "nuclearcraft:turbine_rotor_blade_extreme",
             "tier3": "nuclearcraft:turbine_rotor_blade_sic_sic_cmc",
-            "text": "These use the energy of the steam to turn the rotor shaft. Blades must be placed in sets, so that there is only one type of blade per 'shaft layer'. Each side of the turbine shaft needs to be covered by blades, and they need to extend to the wall of the turbine. Each blade processes a certain amount of steam, and if more steam is input than the blades can process, the turbine can break. When steam flows through each set of blades, it expands by a certain amount. The closer this expansion rate is to the ideal expansion rate for the input steam, the more efficient the turbine will be. (link to turbine math:blades)"
+            "text": "These use the energy of the steam to turn the rotor shaft. Blades must be placed in sets, so that there is only one type of blade per 'shaft layer'. Each side of the turbine shaft needs to be covered by blades, and they need to extend to the wall of the turbine."
+        },
+        {
+            "type": "text",
+            "text": "Each blade processes a certain amount of steam, and if more steam is input than the blades can process, the turbine can break. When steam flows through each set of blades, it expands by a certain amount. The closer this expansion rate is to the ideal expansion rate for the input steam, the more efficient the turbine will be. (link to turbine math:blades)"
         },
         {
             "anchor": "stator",
@@ -57,7 +61,7 @@
             "anchor": "dynamo_coil",
             "type": "machines/single_machine",
             "block": "nuclearcraft:turbine_dynamo_coil",
-            "text": "Dynamo coils turn the rotational energy of the shaft into (rf/fe/electricity?). They are placed on the same faces as the rotor bearings. Each type of dynamo coil has an efficiency multiplier, and placement rules. (link to turbine math:dynamo coil efficiencies)"
+            "text": "Dynamo coils turn the rotational energy of the shaft into (rf/fe/electricity?). They are placed on the same faces as the rotor bearings. Each type of dynamo coil has an efficiency multiplier, and placement rules. (link to turbine math:dynamo coil efficiencies). component processor to dynamically display list of items"
         },
         {
             "anchor": "inlet",
