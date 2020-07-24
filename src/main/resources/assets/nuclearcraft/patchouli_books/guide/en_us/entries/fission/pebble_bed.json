@@ -1,7 +1,8 @@
 {
-    "name": "Pebblebed Fission Reactors",
-    "icon": "nuclearcraft:pebblebed_fission_controller",
+    "name": "Pebble-Bed Reactor (WIP)",
+    "icon": "nuclearcraft:pebble_fission_controller",
     "category": "nuclearcraft:fission",
+	"sortnum": 0,
     "pages": [
         {
             "type": "text",

@@ -1,5 +1,6 @@
 {
 	"name": "Multiblocks",
-	"description": "(WIP) This section contains details about all the non-reactor multiblocks in NuclearCraft.",
-	"icon": "nuclearcraft:turbine_controller"
+	"description": "Think big, build big.",
+	"icon": "nuclearcraft:multitool",
+	"sortnum": 2
 }
