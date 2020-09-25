@@ -1,22 +1,34 @@
 package nc.config;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import nc.*;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import nc.Global;
+import nc.ModCheck;
+import nc.multiblock.PlacementRule;
+import nc.multiblock.fission.FissionPlacement;
+import nc.multiblock.fission.tile.IFissionPart;
+import nc.multiblock.turbine.TurbinePlacement;
+import nc.multiblock.turbine.tile.ITurbinePart;
 import nc.network.PacketHandler;
 import nc.network.config.ConfigUpdatePacket;
 import nc.radiation.RadSources;
 import nc.recipe.ProcessorRecipeHandler;
-import nc.util.*;
+import nc.util.Lang;
+import nc.util.NCMath;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.*;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.config.*;
+import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.eventhandler.*;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 
 public class NCConfig {
@@ -39,6 +51,7 @@ public class NCConfig {
 	public static final String CATEGORY_RADIATION = "radiation";
 	public static final String CATEGORY_REGISTRATION = "registration";
 	public static final String CATEGORY_MISC = "misc";
+	public static final String CATEGORY_OUTPUT = "output";
 	
 	public static int[] ore_dims;
 	public static boolean ore_dims_list_type;
@@ -241,6 +254,8 @@ public class NCConfig {
 	private static boolean radiation_enabled;
 	public static boolean radiation_enabled_public;
 	
+	public static String[] radiation_immune_players;
+	
 	public static int radiation_world_chunks_per_tick;
 	public static int radiation_player_tick_rate;
 	
@@ -271,6 +286,7 @@ public class NCConfig {
 	public static double radiation_lowest_rate;
 	public static double radiation_chunk_limit;
 	
+	public static boolean radiation_check_blocks;
 	public static int radiation_block_effect_max_rate;
 	public static double radiation_rain_mult;
 	public static double radiation_swim_mult;
@@ -369,25 +385,17 @@ public class NCConfig {
 	public static void preInit() {
 		File configFile = new File(Loader.instance().getConfigDir(), "nuclearcraft.cfg");
 		config = new Configuration(configFile);
-		syncFromFiles();
+		syncConfig(true, true);
 		
 		MinecraftForge.EVENT_BUS.register(new ServerConfigEventHandler());
 	}
 	
+	public static void postInit() {
+		outputConfigInfo();
+	}
+	
 	public static void clientPreInit() {
 		MinecraftForge.EVENT_BUS.register(new ClientConfigEventHandler());
-	}
-	
-	public static void syncFromFiles() {
-		syncConfig(true, true);
-	}
-	
-	public static void syncFromGui() {
-		syncConfig(false, true);
-	}
-	
-	public static void syncFromFields() {
-		syncConfig(false, false);
 	}
 	
 	private static void syncConfig(boolean loadFromFile, boolean setFromConfig) {
@@ -716,7 +724,7 @@ public class NCConfig {
 		propertyTurbineBladeExpansion.setLanguageKey("gui.nc.config.turbine_blade_expansion");
 		Property propertyTurbineStatorExpansion = config.get(CATEGORY_TURBINE, "turbine_stator_expansion", 0.75D, Lang.localise("gui.nc.config.turbine_stator_expansion.comment"), 0.01D, 1D);
 		propertyTurbineStatorExpansion.setLanguageKey("gui.nc.config.turbine_stator_expansion");
-		Property propertyTurbineCoilConductivity = config.get(CATEGORY_TURBINE, "turbine_coil_conductivity", new double[] {0.86D, 0.9D, 0.98D, 1.04D, 1.1D, 1.12D}, Lang.localise("gui.nc.config.turbine_coil_conductivity.comment"), 0.01D, 15D);
+		Property propertyTurbineCoilConductivity = config.get(CATEGORY_TURBINE, "turbine_coil_conductivity", new double[] {0.88D, 0.9D, 1D, 1.04D, 1.06D, 1.12D}, Lang.localise("gui.nc.config.turbine_coil_conductivity.comment"), 0.01D, 15D);
 		propertyTurbineCoilConductivity.setLanguageKey("gui.nc.config.turbine_coil_conductivity");
 		Property propertyTurbineCoilRule = config.get(CATEGORY_TURBINE, "turbine_coil_rule", new String[] { "one bearing || one connector", "one magnesium coils", "two magnesium coil", "one aluminum coil", "one beryllium coil", "one gold coil && one copper coil" }, Lang.localise("gui.nc.config.turbine_coil_rule.comment"));
 		propertyTurbineCoilRule.setLanguageKey("gui.nc.config.turbine_coil_rule");
@@ -791,6 +799,9 @@ public class NCConfig {
 		Property propertyRadiationEnabled = config.get(CATEGORY_RADIATION, "radiation_enabled", true, Lang.localise("gui.nc.config.radiation_enabled.comment"));
 		propertyRadiationEnabled.setLanguageKey("gui.nc.config.radiation_enabled");
 		
+		Property propertyRadiationImmunePlayers = config.get(CATEGORY_RADIATION, "radiation_immune_players", new String[] {}, Lang.localise("gui.nc.config.radiation_immune_players.comment"));
+		propertyRadiationImmunePlayers.setLanguageKey("gui.nc.config.radiation_immune_players");
+		
 		Property propertyRadiationWorldChunksPerTick = config.get(CATEGORY_RADIATION, "radiation_world_chunks_per_tick", 5, Lang.localise("gui.nc.config.radiation_world_chunks_per_tick.comment"), 1, 400);
 		propertyRadiationWorldChunksPerTick.setLanguageKey("gui.nc.config.radiation_world_chunks_per_tick");
 		Property propertyRadiationPlayerTickRate = config.get(CATEGORY_RADIATION, "radiation_player_tick_rate", 5, Lang.localise("gui.nc.config.radiation_player_tick_rate.comment"), 1, 400);
@@ -846,6 +857,9 @@ public class NCConfig {
 		propertyRadiationLowestRate.setLanguageKey("gui.nc.config.radiation_lowest_rate");
 		Property propertyRadiationChunkLimit = config.get(CATEGORY_RADIATION, "radiation_chunk_limit", -1D, Lang.localise("gui.nc.config.radiation_chunk_limit.comment"), -1D, Double.MAX_VALUE);
 		propertyRadiationChunkLimit.setLanguageKey("gui.nc.config.radiation_chunk_limit");
+		
+		Property propertyRadiationCheckBlocks = config.get(CATEGORY_RADIATION, "radiation_check_blocks", true, Lang.localise("gui.config.radiation.radiation_check_blocks.comment"));
+		propertyRadiationCheckBlocks.setLanguageKey("gui.config.radiation.radiation_check_blocks");
 		Property propertyRadiationBlockEffectMaxRate = config.get(CATEGORY_RADIATION, "radiation_block_effect_max_rate", 0, Lang.localise("gui.nc.config.radiation_block_effect_max_rate.comment"), 0, 15);
 		propertyRadiationBlockEffectMaxRate.setLanguageKey("gui.nc.config.radiation_block_effect_max_rate");
 		Property propertyRadiationRainMult = config.get(CATEGORY_RADIATION, "radiation_rain_mult", 1D, Lang.localise("gui.nc.config.radiation_rain_mult.comment"), 0.000001D, 1000000D);
@@ -1227,6 +1241,7 @@ public class NCConfig {
 		
 		List<String> propertyOrderRadiation = new ArrayList<>();
 		propertyOrderRadiation.add(propertyRadiationEnabled.getName());
+		propertyOrderRadiation.add(propertyRadiationImmunePlayers.getName());
 		propertyOrderRadiation.add(propertyRadiationWorldChunksPerTick.getName());
 		propertyOrderRadiation.add(propertyRadiationPlayerTickRate.getName());
 		propertyOrderRadiation.add(propertyRadiationWorlds.getName());
@@ -1253,8 +1268,7 @@ public class NCConfig {
 		propertyOrderRadiation.add(propertyRadiationDecayRate.getName());
 		propertyOrderRadiation.add(propertyRadiationLowestRate.getName());
 		propertyOrderRadiation.add(propertyRadiationChunkLimit.getName());
-		// propertyOrderRadiation.add(propertyRadiationBlockEffects.getName());
-		// propertyOrderRadiation.add(propertyRadiationBlockEffectLimit.getName());
+		propertyOrderRadiation.add(propertyRadiationCheckBlocks.getName());
 		propertyOrderRadiation.add(propertyRadiationBlockEffectMaxRate.getName());
 		propertyOrderRadiation.add(propertyRadiationRainMult.getName());
 		propertyOrderRadiation.add(propertyRadiationSwimMult.getName());
@@ -1540,6 +1554,8 @@ public class NCConfig {
 			
 			radiation_enabled = propertyRadiationEnabled.getBoolean();
 			
+			radiation_immune_players = propertyRadiationImmunePlayers.getStringList();
+			
 			radiation_world_chunks_per_tick = propertyRadiationWorldChunksPerTick.getInt();
 			radiation_player_tick_rate = propertyRadiationPlayerTickRate.getInt();
 			
@@ -1570,10 +1586,7 @@ public class NCConfig {
 			radiation_lowest_rate = propertyRadiationLowestRate.getDouble();
 			radiation_chunk_limit = propertyRadiationChunkLimit.getDouble();
 			
-			// radiation_block_effects =
-			// propertyRadiationBlockEffects.getStringList();
-			// radiation_block_effect_limit =
-			// propertyRadiationBlockEffectLimit.getDouble();
+			radiation_check_blocks = propertyRadiationCheckBlocks.getBoolean();
 			radiation_block_effect_max_rate = propertyRadiationBlockEffectMaxRate.getInt();
 			radiation_rain_mult = propertyRadiationRainMult.getDouble();
 			radiation_swim_mult = propertyRadiationSwimMult.getDouble();
@@ -1861,6 +1874,8 @@ public class NCConfig {
 		
 		propertyRadiationEnabled.set(radiation_enabled);
 		
+		propertyRadiationImmunePlayers.set(radiation_immune_players);
+		
 		propertyRadiationWorldChunksPerTick.set(radiation_world_chunks_per_tick);
 		propertyRadiationPlayerTickRate.set(radiation_player_tick_rate);
 		
@@ -1891,8 +1906,7 @@ public class NCConfig {
 		propertyRadiationLowestRate.set(radiation_lowest_rate);
 		propertyRadiationChunkLimit.set(radiation_chunk_limit);
 		
-		// propertyRadiationBlockEffects.set(radiation_block_effects);
-		// propertyRadiationBlockEffectLimit.set(radiation_block_effect_limit);
+		propertyRadiationCheckBlocks.set(radiation_check_blocks);
 		propertyRadiationBlockEffectMaxRate.set(radiation_block_effect_max_rate);
 		propertyRadiationRainMult.set(radiation_rain_mult);
 		propertyRadiationSwimMult.set(radiation_swim_mult);
@@ -1975,6 +1989,28 @@ public class NCConfig {
 			radiation_enabled_public = radiation_enabled;
 			radiation_horse_armor_public = radiation_horse_armor;
 		}
+		
+		if (config.hasChanged()) {
+			config.save();
+		}
+	}
+	
+	private static void outputConfigInfo() {
+		List<String> fissionPlacement = new ArrayList<>();
+		for (Object2ObjectMap.Entry<String, PlacementRule<IFissionPart>> entry : FissionPlacement.RULE_MAP.object2ObjectEntrySet()) {
+			if (!entry.getKey().isEmpty()) fissionPlacement.add(entry.getKey());
+		}
+		
+		List<String> turbinePlacement = new ArrayList<>();
+		for (Object2ObjectMap.Entry<String, PlacementRule<ITurbinePart>> entry : TurbinePlacement.RULE_MAP.object2ObjectEntrySet()) {
+			if (!entry.getKey().isEmpty()) turbinePlacement.add(entry.getKey());
+		}
+		
+		Property propertyOutputFissionPlacement = config.get(CATEGORY_OUTPUT, "output_fission_placement", fissionPlacement.toArray(new String[fissionPlacement.size()]), Lang.localise("gui.nc.config.output_fission_placement.comment"));
+		propertyOutputFissionPlacement.setLanguageKey("gui.nc.config.output_fission_placement");
+		
+		Property propertyOutputTurbinePlacement = config.get(CATEGORY_OUTPUT, "output_turbine_placement", turbinePlacement.toArray(new String[turbinePlacement.size()]), Lang.localise("gui.nc.config.output_turbine_placement.comment"));
+		propertyOutputTurbinePlacement.setLanguageKey("gui.nc.config.output_turbine_placement");
 		
 		if (config.hasChanged()) {
 			config.save();
@@ -2078,7 +2114,7 @@ public class NCConfig {
 		@SubscribeEvent(priority = EventPriority.LOWEST)
 		public void onEvent(OnConfigChangedEvent event) {
 			if (event.getModID().equals(Global.MOD_ID)) {
-				syncFromGui();
+				syncConfig(false, true);
 			}
 		}
 	}

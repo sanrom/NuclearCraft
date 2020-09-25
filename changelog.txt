@@ -1,3 +1,35 @@
+v2o.3.7
+
+* Updated Chinese Patchouli localisation [thanks to WuzgXY and ghostbird03!]
+
+* Tweaked turbine throughput bonus (ask in Discord server for subtle details)
+* Tweaked default turbine coil efficiencies
+
+* Fixed crash when shift-clicking items in the vessel and heater port GUIs
+* Hopefully fixed even more turbine rotor render crashes
+
++ Added config to give players total radiation immunity
++ Added config to disable chunk radiation non-TE block contributions
+* Fixed radiation immunity not being applied when radiation death persistence is disabled
+* Fixed CT radiation methods being called too late
+
+* CT scripts can now be stored in the "resources/nuclearcraft/scripts/" directory
+
+v2o.3.6
+
+* Hopefully fixed more turbine rotor render crashes
+
+v2o.3.5
+
+* Fixed fission neutron sources not finding their targets while the multiblock is broken
+* Fixed wrong texture on top and bottom of fission ports
+
+* Hopefully fixed turbine rotor render crashes
+
+* Fixed crash on loading with Chinese localisation [thanks to ghostbird03!]
+
+* Continued Patchouli guide book documentation
+
 v2o.3.4
 
 + Added CT methods to add custom fission reactor and turbine multiblock components
