@@ -85,7 +85,7 @@ public class JEIRecipeWrapper {
 	public static class FuelReprocessor extends JEIRecipeWrapperProcessor<FuelReprocessor> {
 		
 		public FuelReprocessor(IGuiHelper guiHelper, IJEIHandler jeiHandler, ProcessorRecipeHandler recipeHandler, ProcessorRecipe recipe) {
-			super(guiHelper, jeiHandler, recipeHandler, recipe, 39, 30, 176, 3, 37, 38, 58, 30, 57, 30, 37, 38);
+			super(guiHelper, jeiHandler, recipeHandler, recipe, 29, 30, 176, 3, 37, 38, 48, 30, 47, 30, 37, 38);
 		}
 		
 		@Override
@@ -407,7 +407,7 @@ public class JEIRecipeWrapper {
 	public static class Centrifuge extends JEIRecipeWrapperProcessor<Centrifuge> {
 		
 		public Centrifuge(IGuiHelper guiHelper, IJEIHandler jeiHandler, ProcessorRecipeHandler recipeHandler, ProcessorRecipe recipe) {
-			super(guiHelper, jeiHandler, recipeHandler, recipe, 49, 30, 176, 3, 37, 38, 68, 30, 67, 30, 37, 38);
+			super(guiHelper, jeiHandler, recipeHandler, recipe, 39, 30, 176, 3, 37, 38, 58, 30, 57, 30, 37, 38);
 		}
 		
 		@Override
@@ -490,28 +490,28 @@ public class JEIRecipeWrapper {
 		
 		@Override
 		protected int getProgressArrowTime() {
-			return (int) (getDecayLifetime() / 80D);
+			return (int) (getDecayGeneratorLifetime() / 4D);
 		}
 		
-		protected double getDecayLifetime() {
+		protected double getDecayGeneratorLifetime() {
 			if (recipe == null) {
 				return 1200D;
 			}
-			return recipe.getDecayLifetime();
+			return recipe.getDecayGeneratorLifetime();
 		}
 		
-		protected double getDecayPower() {
+		protected double getDecayGeneratorPower() {
 			if (recipe == null) {
 				return 0D;
 			}
-			return recipe.getDecayPower();
+			return recipe.getDecayGeneratorPower();
 		}
 		
-		protected double getDecayRadiation() {
+		protected double getDecayGeneratorRadiation() {
 			if (recipe == null) {
 				return 0D;
 			}
-			return recipe.getDecayRadiation();
+			return recipe.getDecayGeneratorRadiation();
 		}
 		
 		@Override
@@ -519,9 +519,9 @@ public class JEIRecipeWrapper {
 			List<String> tooltip = new ArrayList<>();
 			
 			if (mouseX >= 73 - 47 && mouseY >= 34 - 30 && mouseX < 73 - 47 + 37 + 1 && mouseY < 34 - 30 + 18 + 1) {
-				tooltip.add(TextFormatting.GREEN + BLOCK_LIFETIME + " " + TextFormatting.WHITE + UnitHelper.applyTimeUnitShort(getDecayLifetime(), 3, 1));
-				tooltip.add(TextFormatting.LIGHT_PURPLE + BLOCK_POWER + " " + TextFormatting.WHITE + UnitHelper.prefix(getDecayPower(), 5, "RF/t"));
-				double radiation = getDecayRadiation();
+				tooltip.add(TextFormatting.GREEN + BLOCK_LIFETIME + " " + TextFormatting.WHITE + UnitHelper.applyTimeUnitShort(getDecayGeneratorLifetime(), 3, 1));
+				tooltip.add(TextFormatting.LIGHT_PURPLE + BLOCK_POWER + " " + TextFormatting.WHITE + UnitHelper.prefix(getDecayGeneratorPower(), 5, "RF/t"));
+				double radiation = getDecayGeneratorRadiation();
 				if (radiation > 0D) {
 					tooltip.add(TextFormatting.GOLD + BLOCK_RADIATION + " " + RadiationHelper.radsColoredPrefix(radiation, true));
 				}
@@ -614,7 +614,7 @@ public class JEIRecipeWrapper {
 				}
 				double radiation = getIrradiatorBaseProcessRadiation();
 				if (radiation > 0D) {
-					tooltip.add(TextFormatting.GOLD + FUEL_RADIATION + " " + RadiationHelper.radsColoredPrefix(radiation, true));
+					tooltip.add(TextFormatting.GOLD + RADIATION_PER_FLUX + " " + RadiationHelper.getRadiationTextColor(radiation) + UnitHelper.prefix(radiation / RecipeStats.getFissionMaxModeratorLineFlux(), 3, "Rad/t/N"));
 				}
 			}
 			
@@ -624,7 +624,7 @@ public class JEIRecipeWrapper {
 		private static final String FLUX_REQUIRED = Lang.localise("jei.nuclearcraft.irradiator_flux_required");
 		private static final String HEAT_PER_FLUX = Lang.localise("jei.nuclearcraft.irradiator_heat_per_flux");
 		private static final String EFFICIENCY = Lang.localise("jei.nuclearcraft.irradiator_process_efficiency");
-		private static final String FUEL_RADIATION = Lang.localise("jei.nuclearcraft.base_process_radiation");
+		private static final String RADIATION_PER_FLUX = Lang.localise("jei.nuclearcraft.radiation_per_flux");
 	}
 	
 	public static class PebbleFission extends JEIRecipeWrapperAbstract<PebbleFission> {
@@ -905,59 +905,6 @@ public class JEIRecipeWrapper {
 		private static final String FUEL_RADIATION = Lang.localise("jei.nuclearcraft.salt_fuel_radiation");
 	}
 	
-	public static class Fusion extends JEIRecipeWrapperAbstract<Fusion> {
-		
-		public Fusion(IGuiHelper guiHelper, IJEIHandler jeiHandler, ProcessorRecipeHandler recipeHandler, ProcessorRecipe recipe) {
-			super(guiHelper, jeiHandler, recipeHandler, recipe, "_jei", 55, 30, 176, 3, 37, 16, 74, 35);
-		}
-		
-		@Override
-		protected int getProgressArrowTime() {
-			return (int) (getFusionComboTime() / 4D);
-		}
-		
-		protected double getFusionComboTime() {
-			if (recipe == null) {
-				return 1D;
-			}
-			return recipe.getFusionComboTime();
-		}
-		
-		protected double getFusionComboPower() {
-			if (recipe == null) {
-				return 0D;
-			}
-			return recipe.getFusionComboPower();
-		}
-		
-		protected double getFusionComboHeatVariable() {
-			if (recipe == null) {
-				return 1000D;
-			}
-			return recipe.getFusionComboHeatVariable();
-		}
-		
-		@Override
-		public List<String> getTooltipStrings(int mouseX, int mouseY) {
-			List<String> tooltip = new ArrayList<>();
-			
-			if (mouseX >= 73 - 55 && mouseY >= 34 - 30 && mouseX < 73 - 55 + 37 + 1 && mouseY < 34 - 30 + 18 + 1) {
-				tooltip.add(TextFormatting.GREEN + COMBO_TIME + " " + TextFormatting.WHITE + UnitHelper.applyTimeUnitShort(getFusionComboTime() / fusion_fuel_use, 3));
-				tooltip.add(TextFormatting.LIGHT_PURPLE + COMBO_POWER + " " + TextFormatting.WHITE + UnitHelper.prefix(100D * getFusionComboPower() * fusion_base_power, 5, "RF/t"));
-				double optimalTemp = NCMath.round(R * getFusionComboHeatVariable(), 2);
-				tooltip.add(TextFormatting.YELLOW + COMBO_TEMP + " " + (optimalTemp < 20000000D / 1000D ? TextFormatting.WHITE : TextFormatting.GOLD) + UnitHelper.prefix(optimalTemp, 5, "K", 2));
-			}
-			
-			return tooltip;
-		}
-		
-		private static final double R = 1.21875567483D;
-		
-		private static final String COMBO_TIME = Lang.localise("jei.nuclearcraft.fusion_time");
-		private static final String COMBO_POWER = Lang.localise("jei.nuclearcraft.fusion_power");
-		private static final String COMBO_TEMP = Lang.localise("jei.nuclearcraft.fusion_temp");
-	}
-	
 	public static class CoolantHeater extends JEIRecipeWrapperAbstract<CoolantHeater> {
 		
 		public CoolantHeater(IGuiHelper guiHelper, IJEIHandler jeiHandler, ProcessorRecipeHandler recipeHandler, ProcessorRecipe recipe) {
@@ -1000,6 +947,91 @@ public class JEIRecipeWrapper {
 		}
 		
 		private static final String COOLING = Lang.localise("jei.nuclearcraft.coolant_heater_rate");
+	}
+	
+	public static class FissionEmergencyCooling extends JEIRecipeWrapperAbstract<FissionEmergencyCooling> {
+		
+		public FissionEmergencyCooling(IGuiHelper guiHelper, IJEIHandler jeiHandler, ProcessorRecipeHandler recipeHandler, ProcessorRecipe recipe) {
+			super(guiHelper, jeiHandler, recipeHandler, recipe, 47, 30, 176, 3, 37, 16, 74, 35);
+		}
+		
+		@Override
+		protected int getProgressArrowTime() {
+			return (int) (16D / getEmergencyCoolingHeatPerInputMB());
+		}
+		
+		public double getEmergencyCoolingHeatPerInputMB() {
+			if (recipe == null) {
+				return 1D;
+			}
+			return recipe.getEmergencyCoolingHeatPerInputMB();
+		}
+		
+		@Override
+		public List<String> getTooltipStrings(int mouseX, int mouseY) {
+			List<String> tooltip = new ArrayList<>();
+			
+			if (mouseX >= 73 - 47 && mouseY >= 34 - 30 && mouseX < 73 - 47 + 37 + 1 && mouseY < 34 - 30 + 18 + 1) {
+				tooltip.add(TextFormatting.BLUE + COOLING_PER_MB + " " + TextFormatting.WHITE + NCMath.decimalPlaces(getEmergencyCoolingHeatPerInputMB(), 2) + " H/mB");
+			}
+			
+			return tooltip;
+		}
+		
+		private static final String COOLING_PER_MB = Lang.localise("jei.nuclearcraft.fission_emergency_cooling_per_mb");
+	}
+	
+	public static class Fusion extends JEIRecipeWrapperAbstract<Fusion> {
+		
+		public Fusion(IGuiHelper guiHelper, IJEIHandler jeiHandler, ProcessorRecipeHandler recipeHandler, ProcessorRecipe recipe) {
+			super(guiHelper, jeiHandler, recipeHandler, recipe, "_jei", 55, 30, 176, 3, 37, 16, 74, 35);
+		}
+		
+		@Override
+		protected int getProgressArrowTime() {
+			return (int) (getFusionComboTime() / 4D);
+		}
+		
+		protected double getFusionComboTime() {
+			if (recipe == null) {
+				return 1D;
+			}
+			return recipe.getFusionComboTime();
+		}
+		
+		protected double getFusionComboPower() {
+			if (recipe == null) {
+				return 0D;
+			}
+			return recipe.getFusionComboPower();
+		}
+		
+		protected double getFusionComboHeatVariable() {
+			if (recipe == null) {
+				return 1000D;
+			}
+			return recipe.getFusionComboHeatVariable();
+		}
+		
+		@Override
+		public List<String> getTooltipStrings(int mouseX, int mouseY) {
+			List<String> tooltip = new ArrayList<>();
+			
+			if (mouseX >= 73 - 55 && mouseY >= 34 - 30 && mouseX < 73 - 55 + 37 + 1 && mouseY < 34 - 30 + 18 + 1) {
+				tooltip.add(TextFormatting.GREEN + COMBO_TIME + " " + TextFormatting.WHITE + UnitHelper.applyTimeUnitShort(getFusionComboTime() / fusion_fuel_use, 3));
+				tooltip.add(TextFormatting.LIGHT_PURPLE + COMBO_POWER + " " + TextFormatting.WHITE + UnitHelper.prefix(100D * getFusionComboPower() * fusion_base_power, 5, "RF/t"));
+				double optimalTemp = R * getFusionComboHeatVariable();
+				tooltip.add(TextFormatting.YELLOW + COMBO_TEMP + " " + (optimalTemp < 20000000D / 1000D ? TextFormatting.WHITE : TextFormatting.GOLD) + UnitHelper.prefix(optimalTemp, 5, "K", 2));
+			}
+			
+			return tooltip;
+		}
+		
+		private static final double R = 1.21875567483D;
+		
+		private static final String COMBO_TIME = Lang.localise("jei.nuclearcraft.fusion_time");
+		private static final String COMBO_POWER = Lang.localise("jei.nuclearcraft.fusion_power");
+		private static final String COMBO_TEMP = Lang.localise("jei.nuclearcraft.fusion_temp");
 	}
 	
 	public static class HeatExchanger extends JEIRecipeWrapperAbstract<HeatExchanger> {

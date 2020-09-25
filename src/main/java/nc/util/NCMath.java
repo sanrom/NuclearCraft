@@ -83,10 +83,6 @@ public class NCMath {
 		return out;
 	}
 	
-	public static double round(double value, int decimal) {
-		return roundTo(value, Math.pow(10D, -decimal));
-	}
-	
 	public static int kroneckerDelta(int... indices) {
 		for (int i = 0; i < indices.length; i++) {
 			if (indices[i] != indices[(i + 1) % indices.length]) {
@@ -296,6 +292,10 @@ public class NCMath {
 	}
 	
 	public static int toInt(long value) {
+		return (int) clamp(value, Integer.MIN_VALUE, Integer.MAX_VALUE);
+	}
+	
+	public static int toInt(double value) {
 		return (int) clamp(value, Integer.MIN_VALUE, Integer.MAX_VALUE);
 	}
 	

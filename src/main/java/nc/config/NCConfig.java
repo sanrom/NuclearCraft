@@ -1,34 +1,25 @@
 package nc.config;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
-import nc.Global;
-import nc.ModCheck;
-import nc.multiblock.PlacementRule;
+import nc.*;
 import nc.multiblock.fission.FissionPlacement;
-import nc.multiblock.fission.tile.IFissionPart;
 import nc.multiblock.turbine.TurbinePlacement;
-import nc.multiblock.turbine.tile.ITurbinePart;
 import nc.network.PacketHandler;
 import nc.network.config.ConfigUpdatePacket;
 import nc.radiation.RadSources;
 import nc.recipe.ProcessorRecipeHandler;
-import nc.util.Lang;
-import nc.util.NCMath;
+import nc.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.*;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.common.config.Property;
+import net.minecraftforge.common.config.*;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.eventhandler.*;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 
 public class NCConfig {
@@ -71,6 +62,7 @@ public class NCConfig {
 	public static double[] energy_upgrade_power_laws;
 	public static double[] energy_upgrade_multipliers;
 	public static int rf_per_eu;
+	public static boolean enable_ic2_eu;
 	public static boolean enable_gtce_eu;
 	public static boolean enable_mek_gas;
 	public static int machine_update_rate;
@@ -118,6 +110,7 @@ public class NCConfig {
 	public static int fission_max_size; // Default: 24
 	public static int fission_comparator_max_temp;
 	public static int fission_neutron_reach;
+	public static double fission_emergency_cooling_multiplier;
 	public static double fission_sound_volume;
 	
 	public static int[] fission_thorium_fuel_time;
@@ -218,7 +211,7 @@ public class NCConfig {
 	public static double[] turbine_power_per_mb;
 	public static double[] turbine_expansion_level;
 	public static int turbine_mb_per_blade;
-	public static double turbine_throughput_efficiency_leniency;
+	public static double[] turbine_throughput_leniency_params;
 	public static double turbine_tension_throughput_factor;
 	public static double turbine_power_bonus_multiplier;
 	public static double turbine_sound_volume;
@@ -383,15 +376,14 @@ public class NCConfig {
 	}
 	
 	public static void preInit() {
-		File configFile = new File(Loader.instance().getConfigDir(), "nuclearcraft.cfg");
-		config = new Configuration(configFile);
+		config = new Configuration(new File(Loader.instance().getConfigDir(), "nuclearcraft.cfg"));
 		syncConfig(true, true);
 		
 		MinecraftForge.EVENT_BUS.register(new ServerConfigEventHandler());
 	}
 	
 	public static void postInit() {
-		outputConfigInfo();
+		outputInfo();
 	}
 	
 	public static void clientPreInit() {
@@ -457,6 +449,8 @@ public class NCConfig {
 		propertyEnergyUpgradeMultipliers.setLanguageKey("gui.nc.config.energy_upgrade_multipliers_fp");
 		Property propertyRFPerEU = config.get(CATEGORY_PROCESSOR, "rf_per_eu", 16, Lang.localise("gui.nc.config.rf_per_eu.comment"), 1, 2000);
 		propertyRFPerEU.setLanguageKey("gui.nc.config.rf_per_eu");
+		Property propertyEnableIC2EU = config.get(CATEGORY_PROCESSOR, "enable_ic2_eu", true, Lang.localise("gui.nc.config.enable_ic2_eu.comment"));
+		propertyEnableIC2EU.setLanguageKey("gui.nc.config.enable_ic2_eu");
 		Property propertyEnableGTCEEU = config.get(CATEGORY_PROCESSOR, "enable_gtce_eu", true, Lang.localise("gui.nc.config.enable_gtce_eu.comment"));
 		propertyEnableGTCEEU.setLanguageKey("gui.nc.config.enable_gtce_eu");
 		Property propertyEnableMekGas = config.get(CATEGORY_PROCESSOR, "enable_mek_gas", true, Lang.localise("gui.nc.config.enable_mek_gas.comment"));
@@ -488,13 +482,13 @@ public class NCConfig {
 		Property propertyProcessorParticles = config.get(CATEGORY_PROCESSOR, "processor_particles", true, Lang.localise("gui.nc.config.processor_particles.comment"));
 		propertyProcessorParticles.setLanguageKey("gui.nc.config.processor_particles");
 		
-		Property propertyRTGPower = config.get(CATEGORY_GENERATOR, "rtg_power", new int[] {1, 25, 10, 250}, Lang.localise("gui.nc.config.rtg_power.comment"), 1, Integer.MAX_VALUE);
+		Property propertyRTGPower = config.get(CATEGORY_GENERATOR, "rtg_power", new int[] {1, 40, 10, 200}, Lang.localise("gui.nc.config.rtg_power.comment"), 1, Integer.MAX_VALUE);
 		propertyRTGPower.setLanguageKey("gui.nc.config.rtg_power");
 		Property propertySolarPower = config.get(CATEGORY_GENERATOR, "solar_power", new int[] {5, 20, 80, 320}, Lang.localise("gui.nc.config.solar_power.comment"), 1, Integer.MAX_VALUE);
 		propertySolarPower.setLanguageKey("gui.nc.config.solar_power");
-		Property propertyDecayLifetime = config.get(CATEGORY_GENERATOR, "decay_lifetime", new double[] {62.4D * 1200D, 20.4D * 1200D, 36.6D * 1200D, 39.6D * 1200D, 35.5D * 1200D, 12.8D * 1200D, 52.8D * 1200D, 8.5D * 1200D, 7.2D * 1200D, 65.2D * 1200D}, Lang.localise("gui.nc.config.decay_lifetime.comment"), 1D, 16777215D);
+		Property propertyDecayLifetime = config.get(CATEGORY_GENERATOR, "decay_lifetime", new double[] {12000D / 0.75D, 12000D / 1.2D, 1200D, 12000D / 2.2D, 12000D / 3D, 12000D / 18D, 12000D / 28D, 12000D / 80D, 12000D / 1000D}, Lang.localise("gui.nc.config.decay_lifetime.comment"), 1D, 16777215D);
 		propertyDecayLifetime.setLanguageKey("gui.nc.config.decay_lifetime");
-		Property propertyDecayPower = config.get(CATEGORY_GENERATOR, "decay_power", new double[] {4D, 4D, 0.75D, 0.25D, 0.5D, 0.75D, 1D, 1.25D, 1.5D, 2D}, Lang.localise("gui.nc.config.decay_power.comment"), 0D, 32767D);
+		Property propertyDecayPower = config.get(CATEGORY_GENERATOR, "decay_power", new double[] {0.75D, 1.2D, 1D, 2.2D, 3D, 18D, 28D, 80D, 1000D}, Lang.localise("gui.nc.config.decay_power.comment"), 0D, 32767D);
 		propertyDecayPower.setLanguageKey("gui.nc.config.decay_power");
 		
 		Property propertyBatteryCapacity = config.get(CATEGORY_ENERGY_STORAGE, "battery_capacity", new int[] {1600000, 6400000, 25600000, 102400000, 32000000, 128000000, 512000000, 2048000000}, Lang.localise("gui.nc.config.battery_capacity.comment"), 1, Integer.MAX_VALUE);
@@ -504,13 +498,13 @@ public class NCConfig {
 		propertyFissionFuelTimeMultiplier.setLanguageKey("gui.nc.config.fission_fuel_time_multiplier");
 		Property propertyFissionSourceEfficiency = config.get(CATEGORY_FISSION, "fission_source_efficiency", new double[] {0.9D, 0.95D, 1D}, Lang.localise("gui.nc.config.fission_source_efficiency.comment"), 0D, 255D);
 		propertyFissionSourceEfficiency.setLanguageKey("gui.nc.config.fission_source_efficiency");
-		Property propertyFissionSinkCoolingRate = config.get(CATEGORY_FISSION, "fission_sink_cooling_rate", new int[] { 55, 50, 85, 80, 70, 105, 90, 100, 110, 115, 145, 65, 95, 200, 195, 75, 120, 60, 160, 130, 125, 150, 175, 170, 165, 180, 140, 135, 185, 190, 155, 205 }, Lang.localise("gui.nc.config.fission_sink_cooling_rate.comment"), 0, 32767);
+		Property propertyFissionSinkCoolingRate = config.get(CATEGORY_FISSION, "fission_sink_cooling_rate", new int[] {55, 50, 85, 80, 70, 105, 90, 100, 110, 115, 145, 65, 95, 200, 195, 75, 120, 60, 160, 130, 125, 150, 175, 170, 165, 180, 140, 135, 185, 190, 155, 205}, Lang.localise("gui.nc.config.fission_sink_cooling_rate.comment"), 0, 32767);
 		propertyFissionSinkCoolingRate.setLanguageKey("gui.nc.config.fission_sink_cooling_rate");
-		Property propertyFissionSinkRule = config.get(CATEGORY_FISSION, "fission_sink_rule", new String[] { "one cell", "one moderator", "one cell && one moderator", "one redstone sink", "two axial glowstone sinks", "one obsidian sink", "two moderators", "one cell && one casing", "exactly two iron sinks", "two water sinks", "exactly one water sink && two lead sinks", "one reflector", "one reflector && one iron sink", "one cell && one gold sink", "one moderator && one prismarine sink", "one water sink", "two axial lapis sinks", "one iron sink", "exactly one quartz sink && one casing", "exactly two axial lead sinks && one casing", "exactly one moderator && one casing", "two cells", "one quartz sink && one lapis sink", "two glowstone sinks && one tin sink", "one gold sink && one prismarine sink", "one redstone sink && one end_stone sink", "one end_stone sink && one copper sink", "two axial reflectors", "two copper sinks && one purpur sink", "exactly two redstone sinks", "three moderators", "three cells" }, Lang.localise("gui.nc.config.fission_sink_rule.comment"));
+		Property propertyFissionSinkRule = config.get(CATEGORY_FISSION, "fission_sink_rule", new String[] {"one cell", "one moderator", "one cell && one moderator", "one redstone sink", "two axial glowstone sinks", "one obsidian sink", "two moderators", "one cell && one casing", "exactly two iron sinks", "two water sinks", "exactly one water sink && two lead sinks", "one reflector", "one reflector && one iron sink", "one cell && one gold sink", "one moderator && one prismarine sink", "one water sink", "two axial lapis sinks", "one iron sink", "exactly one quartz sink && one casing", "exactly two axial lead sinks && one casing", "exactly one moderator && one casing", "two cells", "one quartz sink && one lapis sink", "two glowstone sinks && one tin sink", "one gold sink && one prismarine sink", "one redstone sink && one end_stone sink", "one end_stone sink && one copper sink", "two axial reflectors", "two copper sinks && one purpur sink", "exactly two redstone sinks", "three moderators", "three cells"}, Lang.localise("gui.nc.config.fission_sink_rule.comment"));
 		propertyFissionSinkRule.setLanguageKey("gui.nc.config.fission_sink_rule");
-		Property propertyFissionHeaterCoolingRate = config.get(CATEGORY_FISSION, "fission_heater_cooling_rate", new int[] { 55, 50, 85, 80, 70, 105, 90, 100, 110, 115, 145, 65, 95, 200, 195, 75, 120, 60, 160, 130, 125, 150, 175, 170, 165, 180, 140, 135, 185, 190, 155, 205 }, Lang.localise("gui.nc.config.fission_heater_cooling_rate.comment"), 0, 32767);
+		Property propertyFissionHeaterCoolingRate = config.get(CATEGORY_FISSION, "fission_heater_cooling_rate", new int[] {55, 50, 85, 80, 70, 105, 90, 100, 110, 115, 145, 65, 95, 200, 195, 75, 120, 60, 160, 130, 125, 150, 175, 170, 165, 180, 140, 135, 185, 190, 155, 205}, Lang.localise("gui.nc.config.fission_heater_cooling_rate.comment"), 0, 32767);
 		propertyFissionHeaterCoolingRate.setLanguageKey("gui.nc.config.fission_heater_cooling_rate");
-		Property propertyFissionHeaterRule = config.get(CATEGORY_FISSION, "fission_heater_rule", new String[] { "one vessel", "one moderator", "one vessel && one moderator", "one redstone heater", "two axial glowstone heaters", "one obsidian heater", "two moderators", "one vessel && one casing", "exactly two iron heaters", "two standard heaters", "exactly one standard heater && two lead heaters", "one reflector", "one reflector && one iron heater", "one vessel && one gold heater", "one moderator && one prismarine heater", "one standard heater", "two axial lapis heaters", "one iron heater", "exactly one quartz heater && one casing", "exactly two axial lead heaters && one casing", "exactly one moderator && one casing", "two vessels", "one quartz heater && one lapis heater", "two glowstone heaters && one tin heater", "one gold heater && one prismarine heater", "one redstone heater && one end_stone heater", "one end_stone heater && one copper heater", "two axial reflectors", "two copper heaters && one purpur heater", "exactly two redstone heaters", "three moderators", "three vessels" }, Lang.localise("gui.nc.config.fission_heater_rule.comment"));
+		Property propertyFissionHeaterRule = config.get(CATEGORY_FISSION, "fission_heater_rule", new String[] {"one vessel", "one moderator", "one vessel && one moderator", "one redstone heater", "two axial glowstone heaters", "one obsidian heater", "two moderators", "one vessel && one casing", "exactly two iron heaters", "two standard heaters", "exactly one standard heater && two lead heaters", "one reflector", "one reflector && one iron heater", "one vessel && one gold heater", "one moderator && one prismarine heater", "one standard heater", "two axial lapis heaters", "one iron heater", "exactly one quartz heater && one casing", "exactly two axial lead heaters && one casing", "exactly one moderator && one casing", "two vessels", "one quartz heater && one lapis heater", "two glowstone heaters && one tin heater", "one gold heater && one prismarine heater", "one redstone heater && one end_stone heater", "one end_stone heater && one copper heater", "two axial reflectors", "two copper heaters && one purpur heater", "exactly two redstone heaters", "three moderators", "three vessels"}, Lang.localise("gui.nc.config.fission_heater_rule.comment"));
 		propertyFissionHeaterRule.setLanguageKey("gui.nc.config.fission_heater_rule");
 		Property propertyFissionModeratorFluxFactor = config.get(CATEGORY_FISSION, "fission_moderator_flux_factor", new int[] {10, 22, 36}, Lang.localise("gui.nc.config.fission_moderator_flux_factor.comment"), 0, 32767);
 		propertyFissionModeratorFluxFactor.setLanguageKey("gui.nc.config.fission_moderator_flux_factor");
@@ -549,6 +543,8 @@ public class NCConfig {
 		propertyFissionComparatorMaxTemp.setLanguageKey("gui.nc.config.fission_comparator_max_temp");
 		Property propertyFissionNeutronReach = config.get(CATEGORY_FISSION, "fission_neutron_reach", 4, Lang.localise("gui.nc.config.fission_neutron_reach.comment"), 1, 255);
 		propertyFissionNeutronReach.setLanguageKey("gui.nc.config.fission_neutron_reach");
+		Property propertyFissionEmergencyCoolingMultiplier = config.get(CATEGORY_FISSION, "fission_emergency_cooling_multiplier", 1D, Lang.localise("gui.nc.config.fission_emergency_cooling_multiplier.comment"), 0.001D, 255D);
+		propertyFissionEmergencyCoolingMultiplier.setLanguageKey("gui.nc.config.fission_emergency_cooling_multiplier");
 		Property propertyFissionSoundVolume = config.get(CATEGORY_FISSION, "fission_sound_volume", 1D, Lang.localise("gui.nc.config.fission_sound_volume.comment"), 0D, 15D);
 		propertyFissionSoundVolume.setLanguageKey("gui.nc.config.fission_sound_volume");
 		
@@ -726,9 +722,9 @@ public class NCConfig {
 		propertyTurbineStatorExpansion.setLanguageKey("gui.nc.config.turbine_stator_expansion");
 		Property propertyTurbineCoilConductivity = config.get(CATEGORY_TURBINE, "turbine_coil_conductivity", new double[] {0.88D, 0.9D, 1D, 1.04D, 1.06D, 1.12D}, Lang.localise("gui.nc.config.turbine_coil_conductivity.comment"), 0.01D, 15D);
 		propertyTurbineCoilConductivity.setLanguageKey("gui.nc.config.turbine_coil_conductivity");
-		Property propertyTurbineCoilRule = config.get(CATEGORY_TURBINE, "turbine_coil_rule", new String[] { "one bearing || one connector", "one magnesium coils", "two magnesium coil", "one aluminum coil", "one beryllium coil", "one gold coil && one copper coil" }, Lang.localise("gui.nc.config.turbine_coil_rule.comment"));
+		Property propertyTurbineCoilRule = config.get(CATEGORY_TURBINE, "turbine_coil_rule", new String[] {"one bearing || one connector", "one magnesium coils", "two magnesium coil", "one aluminum coil", "one beryllium coil", "one gold coil && one copper coil"}, Lang.localise("gui.nc.config.turbine_coil_rule.comment"));
 		propertyTurbineCoilRule.setLanguageKey("gui.nc.config.turbine_coil_rule");
-		Property propertyTurbineConnectorRule = config.get(CATEGORY_TURBINE, "turbine_connector_rule", new String[] { "one of any coil" }, Lang.localise("gui.nc.config.turbine_connector_rule.comment"));
+		Property propertyTurbineConnectorRule = config.get(CATEGORY_TURBINE, "turbine_connector_rule", new String[] {"one of any coil"}, Lang.localise("gui.nc.config.turbine_connector_rule.comment"));
 		propertyTurbineConnectorRule.setLanguageKey("gui.nc.config.turbine_connector_rule");
 		Property propertyTurbinePowerPerMB = config.get(CATEGORY_TURBINE, "turbine_power_per_mb", new double[] {16D, 4D, 4D}, Lang.localise("gui.nc.config.turbine_power_per_mb.comment"), 0D, 255D);
 		propertyTurbinePowerPerMB.setLanguageKey("gui.nc.config.turbine_power_per_mb");
@@ -736,8 +732,8 @@ public class NCConfig {
 		propertyTurbineExpansionLevel.setLanguageKey("gui.nc.config.turbine_expansion_level");
 		Property propertyTurbineMBPerBlade = config.get(CATEGORY_TURBINE, "turbine_mb_per_blade", 100, Lang.localise("gui.nc.config.turbine_mb_per_blade.comment"), 1, 32767);
 		propertyTurbineMBPerBlade.setLanguageKey("gui.nc.config.turbine_mb_per_blade");
-		Property propertyTurbineThroughputEfficiencyLeniency = config.get(CATEGORY_TURBINE, "turbine_throughput_efficiency_leniency", 1D, Lang.localise("gui.nc.config.turbine_throughput_efficiency_leniency.comment"), 0D, 255D);
-		propertyTurbineThroughputEfficiencyLeniency.setLanguageKey("gui.nc.config.turbine_throughput_efficiency_leniency");
+		Property propertyTurbineThroughputLeniencyParams = config.get(CATEGORY_TURBINE, "turbine_throughput_leniency_params", new double[] {0.5D, 0.75D}, Lang.localise("gui.nc.config.turbine_throughput_leniency_params.comment"), 0D, 1D);
+		propertyTurbineThroughputLeniencyParams.setLanguageKey("gui.nc.config.turbine_throughput_leniency_params");
 		Property propertyTurbineTensionThroughputFactor = config.get(CATEGORY_TURBINE, "turbine_tension_throughput_factor", 2D, Lang.localise("gui.nc.config.turbine_tension_throughput_factor.comment"), 1D, 255D);
 		propertyTurbineTensionThroughputFactor.setLanguageKey("gui.nc.config.turbine_tension_throughput_factor");
 		Property propertyTurbinePowerBonusMultiplier = config.get(CATEGORY_TURBINE, "turbine_power_bonus_multiplier", 1D, Lang.localise("gui.nc.config.turbine_power_bonus_multiplier.comment"), 0D, 255D);
@@ -758,7 +754,7 @@ public class NCConfig {
 		Property propertyAcceleratorSupercoolerCoolant = config.get(CATEGORY_ACCELERATOR, "accelerator_supercooler_coolant", 0.125D, Lang.localise("gui.nc.config.accelerator_supercooler_coolant.comment"), 0D, Integer.MAX_VALUE);
 		propertyAcceleratorSupercoolerCoolant.setLanguageKey("gui.nc.config.accelerator_supercooler_coolant");
 		
-		Property propertyQuantumMaxQubits = config.get(CATEGORY_QUANTUM, "quantum_max_qubits", 7, Lang.localise("gui.nc.config.quantum_max_qubits.comment"), 1, 10);
+		Property propertyQuantumMaxQubits = config.get(CATEGORY_QUANTUM, "quantum_max_qubits", 7, Lang.localise("gui.nc.config.quantum_max_qubits.comment"), 1, 14);
 		propertyQuantumMaxQubits.setLanguageKey("gui.nc.config.quantum_max_qubits");
 		Property propertyQuantumAnglePrecision = config.get(CATEGORY_QUANTUM, "quantum_angle_precision", 16, Lang.localise("gui.nc.config.quantum_angle_precision.comment"), 2, 5760);
 		propertyQuantumAnglePrecision.setLanguageKey("gui.nc.config.quantum_angle_precision");
@@ -1001,7 +997,7 @@ public class NCConfig {
 		propertyOreDictRawMaterialRecipes.setLanguageKey("gui.nc.config.ore_dict_raw_material_recipes");
 		Property propertyOreDictPriorityBool = config.get(CATEGORY_MISC, "ore_dict_priority_bool", true, Lang.localise("gui.nc.config.ore_dict_priority_bool.comment"));
 		propertyOreDictPriorityBool.setLanguageKey("gui.nc.config.ore_dict_priority_bool");
-		Property propertyOreDictPriority = config.get(CATEGORY_MISC, "ore_dict_priority", new String[] {"minecraft", "thermalfoundation", "techreborn", "nuclearcraft", "immersiveengineering", "mekanism", "ic2", "appliedenergistics2", "refinedstorage", "actuallyadditions", "advancedRocketry", "thaumcraft", "biomesoplenty"}, Lang.localise("gui.nc.config.ore_dict_priority.comment"));
+		Property propertyOreDictPriority = config.get(CATEGORY_MISC, "ore_dict_priority", new String[] {"minecraft", "thermalfoundation", "techreborn", "nuclearcraft", "immersiveengineering", "mekanism", "ic2", "appliedenergistics2", "refinedstorage", "actuallyadditions", "libvulpes", "advancedrocketry", "thaumcraft", "biomesoplenty"}, Lang.localise("gui.nc.config.ore_dict_priority.comment"));
 		propertyOreDictPriority.setLanguageKey("gui.nc.config.ore_dict_priority");
 		Property propertyHWYLAEnabled = config.get(CATEGORY_MISC, "hwyla_enabled", true, Lang.localise("gui.nc.config.hwyla_enabled.comment"));
 		propertyHWYLAEnabled.setLanguageKey("gui.nc.config.hwyla_enabled");
@@ -1036,6 +1032,7 @@ public class NCConfig {
 		propertyOrderProcessor.add(propertyEnergyUpgradePowerLaws.getName());
 		propertyOrderProcessor.add(propertyEnergyUpgradeMultipliers.getName());
 		propertyOrderProcessor.add(propertyRFPerEU.getName());
+		propertyOrderProcessor.add(propertyEnableIC2EU.getName());
 		propertyOrderProcessor.add(propertyEnableGTCEEU.getName());
 		propertyOrderProcessor.add(propertyEnableMekGas.getName());
 		propertyOrderProcessor.add(propertyMachineUpdateRate.getName());
@@ -1089,6 +1086,7 @@ public class NCConfig {
 		propertyOrderFission.add(propertyFissionMaxSize.getName());
 		propertyOrderFission.add(propertyFissionComparatorMaxTemp.getName());
 		propertyOrderFission.add(propertyFissionNeutronReach.getName());
+		propertyOrderFission.add(propertyFissionEmergencyCoolingMultiplier.getName());
 		propertyOrderFission.add(propertyFissionSoundVolume.getName());
 		
 		propertyOrderFission.add(propertyFissionThoriumFuelTime.getName());
@@ -1195,7 +1193,7 @@ public class NCConfig {
 		propertyOrderTurbine.add(propertyTurbinePowerPerMB.getName());
 		propertyOrderTurbine.add(propertyTurbineExpansionLevel.getName());
 		propertyOrderTurbine.add(propertyTurbineMBPerBlade.getName());
-		propertyOrderTurbine.add(propertyTurbineThroughputEfficiencyLeniency.getName());
+		propertyOrderTurbine.add(propertyTurbineThroughputLeniencyParams.getName());
 		propertyOrderTurbine.add(propertyTurbineTensionThroughputFactor.getName());
 		propertyOrderTurbine.add(propertyTurbinePowerBonusMultiplier.getName());
 		propertyOrderTurbine.add(propertyTurbineSoundVolume.getName());
@@ -1372,6 +1370,7 @@ public class NCConfig {
 			energy_upgrade_power_laws = readDoubleArrayFromConfig(propertyEnergyUpgradePowerLaws);
 			energy_upgrade_multipliers = readDoubleArrayFromConfig(propertyEnergyUpgradeMultipliers);
 			rf_per_eu = propertyRFPerEU.getInt();
+			enable_ic2_eu = propertyEnableIC2EU.getBoolean();
 			enable_gtce_eu = propertyEnableGTCEEU.getBoolean();
 			enable_mek_gas = propertyEnableMekGas.getBoolean();
 			machine_update_rate = propertyMachineUpdateRate.getInt();
@@ -1419,6 +1418,7 @@ public class NCConfig {
 			fission_max_size = propertyFissionMaxSize.getInt();
 			fission_comparator_max_temp = propertyFissionComparatorMaxTemp.getInt();
 			fission_neutron_reach = propertyFissionNeutronReach.getInt();
+			fission_emergency_cooling_multiplier = propertyFissionEmergencyCoolingMultiplier.getDouble();
 			fission_sound_volume = propertyFissionSoundVolume.getDouble();
 			
 			fission_thorium_fuel_time = readIntegerArrayFromConfig(propertyFissionThoriumFuelTime);
@@ -1519,7 +1519,7 @@ public class NCConfig {
 			turbine_power_per_mb = readDoubleArrayFromConfig(propertyTurbinePowerPerMB);
 			turbine_expansion_level = readDoubleArrayFromConfig(propertyTurbineExpansionLevel);
 			turbine_mb_per_blade = propertyTurbineMBPerBlade.getInt();
-			turbine_throughput_efficiency_leniency = propertyTurbineThroughputEfficiencyLeniency.getDouble();
+			turbine_throughput_leniency_params = readDoubleArrayFromConfig(propertyTurbineThroughputLeniencyParams);
 			turbine_tension_throughput_factor = propertyTurbineTensionThroughputFactor.getDouble();
 			turbine_power_bonus_multiplier = propertyTurbinePowerBonusMultiplier.getDouble();
 			turbine_sound_volume = propertyTurbineSoundVolume.getDouble();
@@ -1692,6 +1692,7 @@ public class NCConfig {
 		propertyEnergyUpgradePowerLaws.set(energy_upgrade_power_laws);
 		propertyEnergyUpgradeMultipliers.set(energy_upgrade_multipliers);
 		propertyRFPerEU.set(rf_per_eu);
+		propertyEnableIC2EU.set(enable_ic2_eu);
 		propertyEnableGTCEEU.set(enable_gtce_eu);
 		propertyEnableMekGas.set(enable_mek_gas);
 		propertyMachineUpdateRate.set(machine_update_rate);
@@ -1739,6 +1740,7 @@ public class NCConfig {
 		propertyFissionMaxSize.set(fission_max_size);
 		propertyFissionComparatorMaxTemp.set(fission_comparator_max_temp);
 		propertyFissionNeutronReach.set(fission_neutron_reach);
+		propertyFissionEmergencyCoolingMultiplier.set(fission_emergency_cooling_multiplier);
 		propertyFissionSoundVolume.set(fission_sound_volume);
 		
 		propertyFissionThoriumFuelTime.set(fission_thorium_fuel_time);
@@ -1839,7 +1841,7 @@ public class NCConfig {
 		propertyTurbinePowerPerMB.set(turbine_power_per_mb);
 		propertyTurbineExpansionLevel.set(turbine_expansion_level);
 		propertyTurbineMBPerBlade.set(turbine_mb_per_blade);
-		propertyTurbineThroughputEfficiencyLeniency.set(turbine_throughput_efficiency_leniency);
+		propertyTurbineThroughputLeniencyParams.set(turbine_throughput_leniency_params);
 		propertyTurbineTensionThroughputFactor.set(turbine_tension_throughput_factor);
 		propertyTurbinePowerBonusMultiplier.set(turbine_power_bonus_multiplier);
 		propertyTurbineSoundVolume.set(turbine_sound_volume);
@@ -1995,25 +1997,27 @@ public class NCConfig {
 		}
 	}
 	
-	private static void outputConfigInfo() {
+	private static void outputInfo() {
+		Configuration info = new Configuration(new File(config.getConfigFile().getParentFile(), "nuclearcraft.info"));
+		
 		List<String> fissionPlacement = new ArrayList<>();
-		for (Object2ObjectMap.Entry<String, PlacementRule<IFissionPart>> entry : FissionPlacement.RULE_MAP.object2ObjectEntrySet()) {
-			if (!entry.getKey().isEmpty()) fissionPlacement.add(entry.getKey());
+		for (Object2ObjectMap.Entry<String, String> entry : FissionPlacement.RULE_MAP_RAW.object2ObjectEntrySet()) {
+			fissionPlacement.add(entry.getKey() + " -> " + entry.getValue());
 		}
+		
+		Property propertyFissionPlacement = info.get(CATEGORY_OUTPUT, "fission_placement", fissionPlacement.toArray(new String[fissionPlacement.size()]));
+		propertyFissionPlacement.setLanguageKey("gui.nc.config.fission_placement");
 		
 		List<String> turbinePlacement = new ArrayList<>();
-		for (Object2ObjectMap.Entry<String, PlacementRule<ITurbinePart>> entry : TurbinePlacement.RULE_MAP.object2ObjectEntrySet()) {
-			if (!entry.getKey().isEmpty()) turbinePlacement.add(entry.getKey());
+		for (Object2ObjectMap.Entry<String, String> entry : TurbinePlacement.RULE_MAP_RAW.object2ObjectEntrySet()) {
+			turbinePlacement.add(entry.getKey() + " -> " + entry.getValue());
 		}
 		
-		Property propertyOutputFissionPlacement = config.get(CATEGORY_OUTPUT, "output_fission_placement", fissionPlacement.toArray(new String[fissionPlacement.size()]), Lang.localise("gui.nc.config.output_fission_placement.comment"));
-		propertyOutputFissionPlacement.setLanguageKey("gui.nc.config.output_fission_placement");
+		Property propertyTurbinePlacement = info.get(CATEGORY_OUTPUT, "turbine_placement", turbinePlacement.toArray(new String[turbinePlacement.size()]));
+		propertyTurbinePlacement.setLanguageKey("gui.nc.config.turbine_placement");
 		
-		Property propertyOutputTurbinePlacement = config.get(CATEGORY_OUTPUT, "output_turbine_placement", turbinePlacement.toArray(new String[turbinePlacement.size()]), Lang.localise("gui.nc.config.output_turbine_placement.comment"));
-		propertyOutputTurbinePlacement.setLanguageKey("gui.nc.config.output_turbine_placement");
-		
-		if (config.hasChanged()) {
-			config.save();
+		if (info.hasChanged()) {
+			info.save();
 		}
 	}
 	

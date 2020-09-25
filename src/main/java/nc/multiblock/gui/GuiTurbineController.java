@@ -61,9 +61,9 @@ public class GuiTurbineController extends GuiMultiblock<Turbine, ITurbineControl
 			inputRate = Lang.localise("gui.nc.container.turbine_controller.power_bonus") + " " + NCMath.decimalPlaces(100D * multiblock.powerBonus, 1) + "%";
 		}
 		else {
-			double rateRatio = (double) multiblock.recipeInputRate / (double) multiblock.getLogic().getMaxRecipeRateMultiplier();
-			double rateRatioFP = (double) multiblock.recipeInputRateFP / (double) multiblock.getLogic().getMaxRecipeRateMultiplier();
-			inputRate = Lang.localise("gui.nc.container.turbine_controller.fluid_rate") + " " + UnitHelper.prefix(multiblock.recipeInputRateFP, 6, "B/t", -1) + " [" + Math.round(100D * rateRatioFP) + (rateRatio > 1D ? "%] [!]" : "%]");
+			double rateRatio = multiblock.recipeInputRate / (double) multiblock.getLogic().getMaxRecipeRateMultiplier();
+			double rateRatioFP = multiblock.recipeInputRateFP / multiblock.getLogic().getMaxRecipeRateMultiplier();
+			inputRate = Lang.localise("gui.nc.container.turbine_controller.fluid_rate") + " " + UnitHelper.prefix(NCMath.roundTo(multiblock.recipeInputRateFP, 0.1D), 6, "B/t", -1) + " [" + Math.round(100D * rateRatioFP) + (rateRatio > 1D ? "%] [!]" : "%]");
 			inputRateWidth = inputRateWidth - width(inputRate) > 1 ? width(inputRate) : Math.max(inputRateWidth, width(inputRate));
 		}
 		fontRenderer.drawString(inputRate, xSize / 2 - (NCUtil.isModifierKeyDown() ? width(inputRate) : inputRateWidth) / 2, 60, multiblock.bearingTension <= 0D ? fontColor : multiblock.isTurbineOn ? 0xFFFFFF - (int) (255D * MathHelper.clamp(2D * multiblock.bearingTension, 0D, 1D)) - 256 * (int) (255D * MathHelper.clamp(2D * multiblock.bearingTension - 1D, 0D, 1D)) : ColorHelper.blend(15641088, 0xFF0000, (float) multiblock.bearingTension));
