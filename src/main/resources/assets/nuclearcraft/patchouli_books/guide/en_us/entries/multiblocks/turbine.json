@@ -3,10 +3,119 @@
 	"icon": "nuclearcraft:turbine_controller",
 	"category": "nuclearcraft:multiblocks",
 	"sortnum": 2,
-	"pages": [
-		{
-			"type": "text",
-			"text": "Turbines extract energy from pressurised steam, producing an exhaust fluid in the process."
-		}
-	]
+    "pages": [
+        {
+            "anchor": "intro",
+            "type": "text",
+            "text": "Turbines extract energy from pressurised steam, producing an exhaust fluid in the process."
+        },
+        {
+            "anchor": "casing",
+            "type": "blocks/1",
+            "header": "Turbine Casing",
+            "block": "nuclearcraft:turbine_casing",
+            "text": "Forms the frame of the reactor. Casings are required along all the edges and corners of a turbine. They can also be used to fill in the faces of the turbine."
+        },
+        {
+            "anchor": "glass",
+            "type": "blocks/1",
+            "header": "Turbine Glass",
+            "block": "nuclearcraft:turbine_glass",
+            "text": "Can be used instead of casing to fill in the faces of the turbine. If glass is used, the inside of the turbine will be rendered, which can cause extra lag."
+        },
+        {
+            "anchor": "controller",
+            "type": "blocks/1",
+            "header": "Turbine Controller",
+            "block": "nuclearcraft:turbine_controller",
+            "text": "The brains of the turbine. One and only one is required in one of the turbine's faces for the multiblock to form. The turbine will only work if the controller is supplied with a redstone signal."
+        },
+        {
+            "anchor": "rotor_bearing",
+            "type": "blocks/1",
+            "header": "Turbine Rotor Bearing",
+            "block": "nuclearcraft:turbine_rotor_bearing",
+            "text": "Connects the turbine rotor shaft to the casing. Bearings must cover the entire end of the rotor shaft on both sides. Bearings are placed on opposite faces of the turbine."
+        },
+        {
+            "anchor": "rotor_shaft",
+            "type": "blocks/1",
+            "header": "Turbine Rotor Shaft",
+            "block": "nuclearcraft:turbine_rotor_shaft",
+            "text": "The core of the turbine. Must be a cuboid shape, in the center of the turbine, and connected to bearings on both ends."
+        },
+        {
+            "anchor": "rotor_blades",
+            "type": "blocks/3",
+            "header": "Turbine Rotor Blades",
+            "block1": "nuclearcraft:turbine_rotor_blade_steel",
+            "block2": "nuclearcraft:turbine_rotor_blade_extreme",
+            "block3": "nuclearcraft:turbine_rotor_blade_sic_sic_cmc",
+            "text": "These use the energy of the steam to turn the rotor shaft. Blades must be placed in sets, so that there is only one type of blade per 'shaft layer'. Each side of the turbine shaft needs to be covered by blades, and they need to extend to the wall of the turbine."
+        },
+        {
+            "type": "text",
+            "text": "Each blade processes a certain amount of steam, and if more steam is input into the turbine than the blades can process, the turbine can break. When steam flows through each set of blades, it expands by a certain amount. The closer this expansion rate is to the ideal expansion rate for the input steam, the more efficient the turbine will be."
+        },
+        {
+            "anchor": "stator",
+            "type": "blocks/1",
+            "header": "Turbine Rotor Stator",
+            "block": "nuclearcraft:turbine_rotor_stator",
+            "text": "Similar to blades, except when steam passes through it, it contracts instead of expanding. Stators do not process steam like blades do; they do not add to the turbine's maximum steam. Placement rules are the same as rotor blades."
+        },
+        {
+            "anchor": "dynamo_coil",
+            "type": "blocks/1",
+            "header": "Turbine Dynamo Coil",
+            "block": "nuclearcraft:turbine_dynamo_coil:0,nuclearcraft:turbine_dynamo_coil:1,nuclearcraft:turbine_dynamo_coil:2,nuclearcraft:turbine_dynamo_coil:3,nuclearcraft:turbine_dynamo_coil:4,nuclearcraft:turbine_dynamo_coil:5",
+            "text": "Dynamo coils turn the rotation of the shaft into energy. They are placed on the same faces as the rotor bearings. Each type of dynamo coil has an efficiency multiplier, and placement rules."
+        },
+        {
+            "anchor": "inlet",
+            "type": "blocks/1",
+            "header": "Turbine Fluid Inlet",
+            "block": "nuclearcraft:turbine_inlet",
+            "text": "Allows steam to enter the turbine. Must be placed on one of the faces of the turbine that has a rotor bearing. Must be on the opposite face of the turbine outlet."
+        },
+        {
+            "anchor": "outlet",
+            "type": "blocks/1",
+            "header": "Turbine Fluid Outlet",
+            "block": "nuclearcraft:turbine_outlet",
+            "text": "Allows exhaust steam to exit the turbine. Must be placed on one of the faces of the turbine that has a rotor bearing. Must be on the opposite face of the turbine inlet."
+        },
+        {
+            "anchor": "examples",
+            "type": "text",
+            "title": "Turbine Examples",
+            "text": "Here are a few examples of valid, functionning turbines. These turbines are intentionnally designed to not be very efficient, otherwise this guide would spoil all the fun."
+        },
+        {
+            "type": "multiblock",
+            "name": "Small Turbine Example",
+            "multiblock": {
+                "mapping": {
+                    "F": "nuclearcraft:turbine_casing",
+                    "G": "nuclearcraft:turbine_glass",
+                    "M": "nuclearcraft:turbine_dynamo_coil[type=magnesium]",
+                    "B": "nuclearcraft:turbine_rotor_bearing",
+                    "S": "nuclearcraft:turbine_rotor_shaft",
+                    "I": "nuclearcraft:turbine_inlet",
+                    "O": "nuclearcraft:turbine_outlet",
+                    "C": "nuclearcraft:turbine_controller",
+                    "b": "nuclearcraft:turbine_rotor_blade_steel",
+                    "s": "nuclearcraft:turbine_rotor_stator",
+                    "0": "nuclearcraft:turbine_casing"
+                },
+                "pattern": [
+                    ["FFFFF", "FGGGF", "FGGGF", "FGGGF", "FGGGF", "FGGGF", "FFFFF"],
+                    ["FFMFF", "G b G", "G b G", "G s G", "G b G", "G b G", "FFMFF"],
+                    ["FMBMF", "GbSbG", "GbSbG", "GsSsG", "GbSbG", "GbSbG", "FMBMF"],
+                    ["FIMFF", "C b G", "G b G", "G s G", "G b G", "G b G", "FFMOF"],
+                    ["FFFF0", "FFFFF", "FFFFF", "FFFFF", "FFFFF", "FFFFF", "FFFFF"]
+                ]
+            }
+        }
+    ]
 }

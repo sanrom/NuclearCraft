@@ -24,7 +24,7 @@
 			"block1": "nuclearcraft:pebble_fission_controller",
 			"block2": "nuclearcraft:solid_fission_controller",
 			"block3": "nuclearcraft:salt_fission_controller",
-			"text": "The type of reactor is given by the controller, installed in one of the reactor walls. Without a controller, the multiblock will not form. Its GUI will show information about the reactor as a whole, such as the averages of relevant components' stats."
+			"text": "The type of reactor is determined by the controller, installed in one of the reactor walls. Without a controller, the multiblock will not form. Its GUI will show information about the reactor as a whole, such as the averages of relevant components' stats."
 		},
 		{
 			"anchor": "conductor",
@@ -53,7 +53,49 @@
 			"block1": "nuclearcraft:pebble_fission_chamber",
 			"block2": "nuclearcraft:solid_fission_cell",
 			"block3": "nuclearcraft:salt_fission_vessel",
-			"text": "Each type of reactor has an associated fuel component which houses the fission fuel."
+			"text": "Each type of reactor has an associated fuel component which houses the fission fuel. When the fuel is undergoing fission, it produces a certain amount of heat. Fuel components can also be filtered by right-clicking the component with a fuel to allow for multi-fuel reactors."
+		},
+		{
+			"anchor": "criticality",
+			"type": "text",
+			"title": "Criticality Factor",
+			"text": "For fuels to be able to undergo fission, they need to recieve a certain $(l)neutron flux$(), which is measured in N/t. When the neutron flux going into a $(l:fission/general#fuel_component)fuel component$() is above the fuel's criticality factor, the fuel will start undergoing fission. This will not only produce heat, but also more neutrons. $(l:fission/general#moderator)Moderators$() can slow down these high energy neutrons into ones that will cause more fission in other fuel components."
+		},
+		{
+			"anchor": "moderator",
+			"type": "blocks/3",
+			"header": "Moderators",
+			"block1": "nuclearcraft:ingot_block:8",
+			"block2": "nuclearcraft:ingot_block:9",
+			"block3": "nuclearcraft:heavy_water_moderator",
+			"text": "Moderators are placed in a straight line, no more than 4 blocks long. At one end of the moderator line there must be an $(l)active$() fuel component. The neutron flux 'generated' at the other end will be equal to the sum of the flux factors of each of the moderators in that line."
+		},
+		{
+			"type": "text",
+			// "title": "Moderators Continued",
+			"text": "This works in both ways: if there are active fuel cells on both ends of the moderator line, then both cells will recieve neutron flux equal to the sum of the flux factors of each moderator in the line."
+		},
+		{
+			"anchor": "reflector",
+			"type": "blocks/2",
+			"header": "Reflectors",
+			"block1": "nuclearcraft:fission_reflector:0",
+			"block2": "nuclearcraft:fission_reflector:1",
+			"text": "Reflectors can reflect the neutrons back at the source with various efficiencies. Reflectors have to be within "
+		},
+		{
+			"anchor": "irradiator",
+			"type": "blocks/1",
+			"header": "Irradiators",
+			"block": "nuclearcraft:fission_irradiator",
+			"text": "(irradiator)"
+		},
+		{
+			"anchor": "shield",
+			"type": "blocks/1",
+			"header": "Shields",
+			"block": "nuclearcraft:fission_shield:0",
+			"text": "(shield)"
 		}
 	]
 }
